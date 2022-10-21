@@ -207,6 +207,8 @@ FC_Err = 1
 epoch = 0
 max_iter = 100000
 tol = 1e-8
+# fraction = 0.1
+# epsilon = 0.01
 fraction = 0.1
 epsilon = 0.01
 
@@ -237,12 +239,13 @@ while FC_Err > tol and epoch < max_iter:
 
     a_den = dFdW1+ddFddW1 * r * sigma**2
 
-    a_den[a_den >= -1e-16] = -1e-16
+    # a_den[a_den >= -1e-1] = -1e-1
 
     a_new = -1/a_den-0.4
-    a_new[0, :, :] = 0
 
-    a_new[a_new <= 0] = 0
+    a_new[0, :, :] =1e-3
+
+    a_new[a_new <= 1e-3] = 1e-3
 
     c_new = (dFdW1/2)**2
     c_new[dFdW1 >= 0] = 0
@@ -388,7 +391,7 @@ axs["right down"].set_title("Drift of W")
 axs["right down"].grid(linestyle=':')
 
 
-pdf_pages = PdfPages(f"Result_{max_iter}.pdf")
+pdf_pages = PdfPages(f"./Python/Result3_{max_iter}.pdf")
 
 
 pdf_pages.savefig(fig)
