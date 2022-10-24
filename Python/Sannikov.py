@@ -352,50 +352,34 @@ figwidth = 10
 fig, axs = plt.subplot_mosaic(
 
     [["left column", "right top"],
-
      ["left column", "right mid"],
-
      ["left column", "right down"]], figsize=(4 * figwidth, 2 * figwidth)
 
 )
 
 
 axs["left column"].plot(W1, F)
-
 axs["left column"].plot(W1, -W1**2)
-
 axs["left column"].set_title("Profit")
-
 axs["left column"].grid(linestyle=':')
 
 
 axs["right top"].plot(W1, a)
-
 axs["right top"].set_title("Effort a(W)")
-
 axs["right top"].grid(linestyle=':')
 
 
 axs["right mid"].plot(W1, c)
-
 axs["right mid"].set_title("Consumption c(W)")
-
 axs["right mid"].grid(linestyle=':')
 
 B_W = r*(W1-c**(1/2)+a**2/2+2*a/5)
 
 axs["right down"].plot(W1, B_W)
-
 axs["right down"].set_title("Drift of W")
-
 axs["right down"].grid(linestyle=':')
 
-
 pdf_pages = PdfPages(f"./Python/Result3_{max_iter}.pdf")
-
-
 pdf_pages.savefig(fig)
-
 plt.close()
-
 pdf_pages.close()
