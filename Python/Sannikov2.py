@@ -17,22 +17,22 @@ r = 0.1
 sigma = 1.0
 
 
-def finiteDiff_3D(data, dim, order, dlt, NBC, cap=None):
+def finiteDiff_3D(data, dim, order, dlt, NBC=-2, cap=None):
+
+    """
+    F'(1)=-2 F(1)=-1 
+             F(0)=0
+    """
     # compute the central difference derivatives for given input and dimensions
-    res = np.zeros(data.shape)
+    res = np.zeros((data.shape[0]-2, data.shape[1],data.shape[2]))
     l = len(data.shape)
-    data[-2, :, :] = data[-1, :, :] +2*dlt
-
-
     if l == 3:
         if order == 1:                    # first order derivatives
 
             if dim == 0:                  # to first dimension
 
-                res[1:-1, :, :] = (1 / (2 * dlt)) * \
+                res[0:-1, :, :] = (1 / (2 * dlt)) * \
                     (data[2:, :, :] - data[:-2, :, :])
-                res[-1, :, :] = (1 / dlt) * (data[-1, :, :] - data[-2, :, :])
-                res[0, :, :] = (1 / dlt) * (data[1, :, :] - data[0, :, :])
 
             elif dim == 1:                # to second dimension
 
@@ -40,14 +40,12 @@ def finiteDiff_3D(data, dim, order, dlt, NBC, cap=None):
                     (data[:, 2:, :] - data[:, :-2, :])
                 res[:, -1, :] = (1 / dlt) * (data[:, -1, :] - data[:, -2, :])
                 res[:, 0, :] = (1 / dlt) * (data[:, 1, :] - data[:, 0, :])
-
             elif dim == 2:                # to third dimension
 
                 res[:, :, 1:-1] = (1 / (2 * dlt)) * \
                     (data[:, :, 2:] - data[:, :, :-2])
                 res[:, :, -1] = (1 / dlt) * (data[:, :, -1] - data[:, :, -2])
                 res[:, :, 0] = (1 / dlt) * (data[:, :, 1] - data[:, :, 0])
-
             else:
                 raise ValueError('wrong dim')
 
@@ -55,133 +53,12 @@ def finiteDiff_3D(data, dim, order, dlt, NBC, cap=None):
 
             if dim == 0:                  # to first dimension
 
-                res[1:-1, :, :] = (1 / dlt ** 2) * (data[2:, :, :] +
-                                                    data[:-2, :, :] - 2 * data[1:-1, :, :])
-                res[-1, :, :] = (1 / dlt ** 2) * (data[-1, :, :] +
-                                                  data[-3, :, :] - 2 * data[-2, :, :])
+                res[1:-2, :, :] = (1 / dlt ** 2) * (data[3:-2, :, :] +
+                                                    data[1:-4, :, :] - 2 * data[2:-3, :, :])
+                res[-1, :, :] = (1/(2*dlt))* (NBC*np.ones(res[-1, :, :].shape)-(1/(2*dlt))*(data[-2,:,:]-data[-4,:,:]))
                 res[0, :, :] = (1 / dlt ** 2) * (data[2, :, :] +
                                                  data[0, :, :] - 2 * data[1, :, :])
-                                                                                                                                                                         
-            elif dim == 1:                # to second dimension
 
-                res[:, 1:-1, :] = (1 / dlt ** 2) * (data[:, 2:, :] +
-                                                    data[:, :-2, :] - 2 * data[:, 1:-1, :])
-                res[:, -1, :] = (1 / dlt ** 2) * (data[:, -1, :] +
-                                                  data[:, -3, :] - 2 * data[:, -2, :])
-                res[:, 0, :] = (1 / dlt ** 2) * (data[:, 2, :] +
-                                                 data[:, 0, :] - 2 * data[:, 1, :])
-
-            elif dim == 2:                # to third dimension
-
-                res[:, :, 1:-1] = (1 / dlt ** 2) * (data[:, :, 2:] +
-                                                    data[:, :, :-2] - 2 * data[:, :, 1:-1])
-                res[:, :, -1] = (1 / dlt ** 2) * (data[:, :, -1] +
-                                                  data[:, :, -3] - 2 * data[:, :, -2])
-                res[:, :, 0] = (1 / dlt ** 2) * (data[:, :, 2] +
-                                                 data[:, :, 0] - 2 * data[:, :, 1])
-
-            else:
-                raise ValueError('wrong dim')
-
-        else:
-            raise ValueError('wrong order')
-    elif l == 2:
-        if order == 1:                    # first order derivatives
-
-            if dim == 0:                  # to first dimension
-
-                res[1:-1, :] = (1 / (2 * dlt)) * (data[2:, :] - data[:-2, :])
-                res[-1, :] = (1 / dlt) * (data[-1, :] - data[-2, :])
-                res[0, :] = (1 / dlt) * (data[1, :] - data[0, :])
-
-            elif dim == 1:                # to second dimension
-
-                res[:, 1:-1] = (1 / (2 * dlt)) * (data[:, 2:] - data[:, :-2])
-                res[:, -1] = (1 / dlt) * (data[:, -1] - data[:, -2])
-                res[:, 0] = (1 / dlt) * (data[:, 1] - data[:, 0])
-
-            else:
-                raise ValueError('wrong dim')
-
-        elif order == 2:
-
-            if dim == 0:                  # to first dimension
-
-                res[1:-1, :] = (1 / dlt ** 2) * (data[2:, :] +
-                                                 data[:-2, :] - 2 * data[1:-1, :])
-                res[-1, :] = (1 / dlt ** 2) * (data[-1, :] +
-                                               data[-3, :] - 2 * data[-2, :])
-                res[0, :] = (1 / dlt ** 2) * (data[2, :] +
-                                              data[0, :] - 2 * data[1, :])
-
-            elif dim == 1:                # to second dimension
-
-                res[:, 1:-1] = (1 / dlt ** 2) * (data[:, 2:] +
-                                                 data[:, :-2] - 2 * data[:, 1:-1])
-                res[:, -1] = (1 / dlt ** 2) * (data[:, -1] +
-                                               data[:, -3] - 2 * data[:, -2])
-                res[:, 0] = (1 / dlt ** 2) * (data[:, 2] +
-                                              data[:, 0] - 2 * data[:, 1])
-
-            else:
-                raise ValueError('wrong dim')
-
-        else:
-            raise ValueError('wrong order')
-
-    else:
-        raise ValueError("Dimension NOT supported")
-
-    if cap is not None:
-        res[res < cap] = cap
-    return res
-
-
-def finiteDiff_3D_GPTS(data, dim, order, dlt, NBC, cap=None):
-    # compute the central difference derivatives for given input and dimensions
-    res = np.zeros(data.shape)
-    l = len(data.shape)
-    GPTS = data[-2, :, :] - 2*dlt
-
-    
-    if l == 3:
-        if order == 1:                    # first order derivatives
-
-            if dim == 0:                  # to first dimension
-
-                res[1:-1, :, :] = (1 / (2 * dlt)) * \
-                    (data[2:, :, :] - data[:-2, :, :])
-                res[-1, :, :] = (1 / dlt) * (GPTS - data[-2, :, :])
-                res[0, :, :] = (1 / dlt) * (data[1, :, :] - data[0, :, :])
-
-            elif dim == 1:                # to second dimension
-
-                res[:, 1:-1, :] = (1 / (2 * dlt)) * \
-                    (data[:, 2:, :] - data[:, :-2, :])
-                res[:, -1, :] = (1 / dlt) * (data[:, -1, :] - data[:, -2, :])
-                res[:, 0, :] = (1 / dlt) * (data[:, 1, :] - data[:, 0, :])
-
-            elif dim == 2:                # to third dimension
-
-                res[:, :, 1:-1] = (1 / (2 * dlt)) * \
-                    (data[:, :, 2:] - data[:, :, :-2])
-                res[:, :, -1] = (1 / dlt) * (data[:, :, -1] - data[:, :, -2])
-                res[:, :, 0] = (1 / dlt) * (data[:, :, 1] - data[:, :, 0])
-
-            else:
-                raise ValueError('wrong dim')
-
-        elif order == 2:
-
-            if dim == 0:                  # to first dimension
-
-                res[1:-1, :, :] = (1 / dlt ** 2) * (data[2:, :, :] +
-                                                    data[:-2, :, :] - 2 * data[1:-1, :, :])
-                res[-1, :, :] = (1 / dlt ** 2) * (GPTS +
-                                                  data[-2, :, :] - 2 * data[-1, :, :])
-                res[0, :, :] = (1 / dlt ** 2) * (data[2, :, :] +
-                                                 data[0, :, :] - 2 * data[1, :, :])
-                                                                                                                                                                         
             elif dim == 1:                # to second dimension
 
                 res[:, 1:-1, :] = (1 / dlt ** 2) * (data[:, 2:, :] +
@@ -279,6 +156,9 @@ hW1 = 0.005
 W1 = np.arange(W1_min, W1_max+hW1, hW1)
 nW1 = len(W1)
 
+W1_short = W1[1:-2]
+nW1_short = len(W1_short)
+
 W2_min = 0.0
 W2_max = 1.0
 hW2 = 0.5
@@ -295,12 +175,18 @@ nW3 = len(W3)
 stateSpace = np.hstack([W1_mat.reshape(-1, 1, order='F'),
                        W2_mat.reshape(-1, 1, order='F'), W3_mat.reshape(-1, 1, order='F')])
 
+W1_mat_short = W1_mat[1:-2,:,:]
+
 W1_mat_1d = W1_mat.ravel(order='F')
+W1_mat_short_mat_1d = W1_mat_short.ravel(order='F')
 W2_mat_1d = W2_mat.ravel(order='F')
 W3_mat_1d = W3_mat.ravel(order='F')
 
 lowerLims = np.array([W1.min(), W2.min(), W3.min()], dtype=np.float64)
 upperLims = np.array([W1.max(), W2.max(), W3.max()], dtype=np.float64)
+
+lowerLims_short = np.array([W1_short.min(), W2.min(), W3.min()], dtype=np.float64)
+upperLims_short = np.array([W1_short.max(), W2.max(), W3.max()], dtype=np.float64)
 
 
 print("Grid dimension: [{}, {}, {}]\n".format(nW1, nW2, nW3))
@@ -309,15 +195,19 @@ print("Grid step: [{}, {}, {}]\n".format(hW1, hW2, hW3))
 F_init = -W1_mat**2
 # F_init = -W1_mat**2
 
-a_star = np.zeros(W1_mat.shape)
-c_star = np.zeros(W1_mat.shape)
+# a_star = np.zeros(W1_mat.shape)
+# c_star = np.zeros(W1_mat.shape)
+
+a_star = np.zeros(W1_mat_short.shape)
+c_star = np.zeros(W1_mat_short.shape)
+
 
 dVec = np.array([hW1, hW2, hW3])
-increVec = np.array([1, nW1, nW1*nW2], dtype=np.int32)
+increVec = np.array([1, nW1_short, nW1_short*nW2], dtype=np.int32)
 
 petsc_mat = PETSc.Mat().create()
 petsc_mat.setType('aij')
-petsc_mat.setSizes([nW1 * nW2 * nW3, nW1 * nW2 * nW3])
+petsc_mat.setSizes([nW1_short * nW2 * nW3, nW1_short * nW2 * nW3])
 petsc_mat.setPreallocationNNZ(13)
 petsc_mat.setUp()
 ksp = PETSc.KSP()
@@ -335,25 +225,14 @@ tol = 1e-8
 fraction = 0.1
 epsilon = 0.01
 
-
-# 1. Function Derivatives
-# 1.1 Nuemann boundary F'(1)=-2     dFdW1[-1, :, :] = -2
-
 while FC_Err > tol and epoch < max_iter:
     start_eps = time.time()
+    F_init[0,:,:]=0
+    F_init[-1,:,:]=-1
+    F_init_short = F_init[1:-2,:,:]
+    dFdW1_short = finiteDiff_3D(F_init, 0, 1, hW1)
 
-    # F_init[-1] s.t. dF_0/dw=-2
-    # F_init[0] = 0
-    # F_init[1]=-1 
-
-
-    F_init[0, :, :] = 0
-    F_init[-1, :, :] = F0(W1[-1])
-
-    dFdW1 = finiteDiff_3D(F_init, 0, 1, hW1,-2)
-
-    # dFdW1[-1, :, :] = -2
-    dFdW1[-1, :, :] = dF0(W1[-1])
+    dFdW1_short[-1, :, :] = -2
     # dFdW1[0,:,:][dFdW1[0,:,:]<=1e-16]=1e-16
 
     # dW1[dW1 <= 1e-16] = 1e-16
@@ -364,7 +243,7 @@ while FC_Err > tol and epoch < max_iter:
     # dW3[dW3 <= 1e-16] = 1e-16
     # dL = dW3
     # second order
-    ddFddW1 = finiteDiff_3D(F_init, 0, 2, hW1)
+    ddFddW1_short = finiteDiff_3D(F_init, 0, 2, hW1)
     ddFddW2 = finiteDiff_3D(F_init, 1, 2, hW2)
     # ddY = ddW2
     ddFddW3 = finiteDiff_3D(F_init, 2, 2, hW3)
@@ -374,7 +253,7 @@ while FC_Err > tol and epoch < max_iter:
     # if np.any(dFdW1+ddFddW1 * r * sigma**2 >= 0):
     #     print("warning\n")
 
-    a_den = dFdW1+ddFddW1 * r * sigma**2
+    a_den = dFdW1_short+ddFddW1_short * r * sigma**2
 
     # a_den[a_den >= -1e-1] = -1e-1
 
@@ -384,21 +263,20 @@ while FC_Err > tol and epoch < max_iter:
 
     a_new[a_new <= 1e-3] = 1e-3
 
-    c_new = (dFdW1/2)**2
-    c_new[dFdW1 >= 0] = 0
+    c_new = (dFdW1_short/2)**2
+    c_new[ddFddW1_short >= 0] = 0
 
     # c_new[c_new<=1e-16] = 1e-16
 
     a = a_new * fraction + a_star*(1-fraction)
     c = c_new * fraction + c_star*(1-fraction)
-
-    A = -r*np.ones(W1_mat.shape)
-    B_1 = r*(W1_mat-u(c)+h(a))
-    B_2 = np.zeros(W1_mat.shape)
-    B_3 = np.zeros(W1_mat.shape)
+    A = -r*np.ones(W1_mat_short.shape)
+    B_1 = r*(W1_mat_short-u(c)+h(a))
+    B_2 = np.zeros(W1_mat_short.shape)
+    B_3 = np.zeros(W1_mat_short.shape)
     C_1 = r**2*sigma**2*gamma(a)**2/2
-    C_2 = np.zeros(W1_mat.shape)
-    C_3 = np.zeros(W1_mat.shape)
+    C_2 = np.zeros(W1_mat_short.shape)
+    C_3 = np.zeros(W1_mat_short.shape)
     D = r*(a-c)
 
     start_ksp = time.time()
@@ -411,11 +289,10 @@ while FC_Err > tol and epoch < max_iter:
     B_2_1d = B_2.ravel(order='F')
     B_3_1d = B_3.ravel(order='F')
     D_1d = D.ravel(order='F')
-    F_init_1d = F_init.ravel(order='F')
     petsclinearsystem.formLinearSystem(W1_mat_1d, W2_mat_1d, W3_mat_1d, A_1d, B_1_1d, B_2_1d,
                                        B_3_1d, C_1_1d, C_2_1d, C_3_1d, epsilon, lowerLims, upperLims, dVec, increVec, petsc_mat)
-
-    b = F_init_1d + D_1d * epsilon
+    F_init_short_1d = F_init_short.ravel(order='F')
+    b = F_init_short_1d + D_1d * epsilon
     petsc_rhs = PETSc.Vec().createWithArray(b)
     x = petsc_mat.createVecRight()
 
@@ -430,13 +307,14 @@ while FC_Err > tol and epoch < max_iter:
     end_ksp = time.time()
     num_iter = ksp.getIterationNumber()
 
-    PDE_rhs = A * F_init + B_1 * dFdW1 + B_2 * dFdW2 + B_3 * \
-        dFdW3 + C_1 * ddFddW1 + C_2 * ddFddW2 + C_3 * ddFddW3 + D
+    PDE_rhs = A * F_init + B_1 * dFdW1_short + B_2 * dFdW2 + B_3 * \
+        dFdW3 + C_1 * ddFddW1_short + C_2 * ddFddW2 + C_3 * ddFddW3 + D
     PDE_Err = np.max(abs(PDE_rhs))
-    FC_Err = np.max(abs((out_comp - F_init) / epsilon))
+    FC_Err = np.max(abs((out_comp - F_init_short) / epsilon))
 
-    F_init = out_comp
-
+    F_init[1:-2,:,:] = out_comp
+    F_init[0, :, :] = 0
+    F_init[-1, :, :] = -1
     # F_init[-2,:,:] = F0(W1[-2])
 
     a_star = a
@@ -515,7 +393,7 @@ axs["right down"].plot(W1, B_W)
 axs["right down"].set_title("Drift of W")
 axs["right down"].grid(linestyle=':')
 
-pdf_pages = PdfPages(f"./Python/Result3_{max_iter}.pdf")
+pdf_pages = PdfPages(f"./Python/Result4_{max_iter}.pdf")
 pdf_pages.savefig(fig)
 plt.close()
 pdf_pages.close()
