@@ -48,7 +48,7 @@ Vzz = zeros(I,J);
 c = zeros(I,J);
 
 %CONSTRUCT MATRIX Bswitch SUMMARIZING EVOLUTION OF z
-chi =  - min(mu,0)/dz + s2/(2*dz2);
+chi =  - min(mu ,0)/dz + s2/(2*dz2);
 yy =  min(mu,0)/dz - max(mu,0)/dz - s2/dz2;
 zeta = max(mu,0)/dz + s2/(2*dz2);
 
