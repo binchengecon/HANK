@@ -29,13 +29,14 @@ def finiteDiff_3D(data, dim, order, dlt, DBC0=0, DBC1 = -1, NBC1 =-2, cap=None):
 
     data[0,:,:]=DBC0
     data[-1,:,:]=DBC1
+    data[-2,:,:]=data[-1,:,:]-dlt*NBC1
 
     if dim == 0:                  # to first dimension
 
         res1[1:-1, :, :] = (1 / (2 * dlt)) * \
             (data[2:, :, :] - data[:-2, :, :])
         res1[0,:,:] = (1/dlt)*(data[1,:,:]-data[0,:,:])
-        res1[-1,:,:] = NBC1
+        res1[-1,:,:] = (1/dlt)*(data[-1,:,:]-data[-2,:,:])
 
         res2[1:-1, :, :] = (1 / (2 * dlt)) *  (res1[2:, :, :] - res1[:-2, :, :])
         res2[0, :, :] = (1/dlt)*(res1[1,:,:]-res1[0,:,:])
@@ -105,19 +106,26 @@ nW3 = len(W3)
 stateSpace = np.hstack([W1_mat.reshape(-1, 1, order='F'),
                        W2_mat.reshape(-1, 1, order='F'), W3_mat.reshape(-1, 1, order='F')])
 
-W1_mat_short = W1_mat[1:-1,:,:]
+# W1_mat_short = W1_mat[1:-1,:,:]
+
+(W1_mat_short, W2_mat_short, W3_mat_short) = np.meshgrid(W1_short, W2, W3, indexing='ij')
+stateSpace_short = np.hstack([W1_mat_short.reshape(-1, 1, order='F'),W2_mat_short.reshape(-1, 1, order='F'), W3_mat_short.reshape(-1, 1, order='F')])
+
 
 W1_mat_1d = W1_mat.ravel(order='F')
-W1_mat_short_mat_1d = W1_mat_short.ravel(order='F')
 W2_mat_1d = W2_mat.ravel(order='F')
 W3_mat_1d = W3_mat.ravel(order='F')
+
+W1_mat_short_1d = W1_mat_short.ravel(order='F')
+W2_mat_short_1d = W2_mat_short.ravel(order='F')
+W3_mat_short_1d = W3_mat_short.ravel(order='F')
+
 
 lowerLims = np.array([W1.min(), W2.min(), W3.min()], dtype=np.float64)
 upperLims = np.array([W1.max(), W2.max(), W3.max()], dtype=np.float64)
 
 lowerLims_short = np.array([W1_short.min(), W2.min(), W3.min()], dtype=np.float64)
 upperLims_short = np.array([W1_short.max(), W2.max(), W3.max()], dtype=np.float64)
-
 
 print("Grid dimension: [{}, {}, {}]\n".format(nW1, nW2, nW3))
 print("Grid step: [{}, {}, {}]\n".format(hW1, hW2, hW3))
@@ -148,12 +156,12 @@ ksp.setFromOptions()
 
 FC_Err = 1
 epoch = 0
-max_iter = 10
+max_iter = 10000
 tol = 1e-8
 # fraction = 0.1
 # epsilon = 0.01
 fraction = 0.01
-epsilon = 0.5
+epsilon = 0.005
 
 while FC_Err > tol and epoch < max_iter:
     start_eps = time.time()
@@ -168,9 +176,9 @@ while FC_Err > tol and epoch < max_iter:
 
     # dW1[dW1 <= 1e-16] = 1e-16
     # dK = dW1
-    dFdW2,ddFddW2 = finiteDiff_3D(F_init, 1, 1, hW2)
+    # dFdW2,ddFddW2 = finiteDiff_3D(F_init, 1, 1, hW2)
     # dY = dW2
-    dFdW3,ddFddW3 = finiteDiff_3D(F_init, 2, 1, hW3)
+    # dFdW3,ddFddW3 = finiteDiff_3D(F_init, 2, 1, hW3)
     # dW3[dW3 <= 1e-16] = 1e-16
     # dL = dW3
     # second order
@@ -201,6 +209,7 @@ while FC_Err > tol and epoch < max_iter:
 
     a = a_new * fraction + a_star*(1-fraction)
     c = c_new * fraction + c_star*(1-fraction)
+
     A = -r*np.ones(W1_mat_short.shape)
     B_1 = r*(W1_mat_short-u(c)+h(a))
     B_2 = np.zeros(W1_mat_short.shape)
@@ -220,7 +229,7 @@ while FC_Err > tol and epoch < max_iter:
     B_2_1d = B_2.ravel(order='F')
     B_3_1d = B_3.ravel(order='F')
     D_1d = D.ravel(order='F')
-    petsclinearsystem.formLinearSystem(W1_mat_1d, W2_mat_1d, W3_mat_1d, A_1d, B_1_1d, B_2_1d,
+    petsclinearsystem.formLinearSystem(W1_mat_short_1d, W2_mat_short_1d, W3_mat_short_1d, A_1d, B_1_1d, B_2_1d,
                                        B_3_1d, C_1_1d, C_2_1d, C_3_1d, epsilon, lowerLims_short, upperLims_short, dVec, increVec, petsc_mat)
     F_init_short_1d = F_init_short.ravel(order='F')
     b = F_init_short_1d + D_1d * epsilon
@@ -269,62 +278,62 @@ res = {
     "W3": W3,
 }
 
-Data_Dir = "./Python/data/"
-os.makedirs(Data_Dir, exist_ok=True)
+# Data_Dir = "./Python/data/"
+# os.makedirs(Data_Dir, exist_ok=True)
 
-with open(Data_Dir + "model_result4_part", "wb") as f:
-    pickle.dump(res, f)
-
-
-F = F_init[:, 0, 0]
-a = a_star[:, 0, 0]
-c = c_star[:, 0, 0]
+# with open(Data_Dir + "model_result4_part", "wb") as f:
+#     pickle.dump(res, f)
 
 
-font = {'family': 'monospace',
-
-        'weight': 'bold',
-
-        'size': 18}
+# F = F_init[:, 0, 0]
+# a = a_star[:, 0, 0]
+# c = c_star[:, 0, 0]
 
 
-plt.rc('font', **font)  # pass in the font dict as kwargs
+# font = {'family': 'monospace',
+
+#         'weight': 'bold',
+
+#         'size': 18}
 
 
-figwidth = 10
+# plt.rc('font', **font)  # pass in the font dict as kwargs
 
 
-fig, axs = plt.subplot_mosaic(
-
-    [["left column", "right top"],
-     ["left column", "right mid"],
-     ["left column", "right down"]], figsize=(4 * figwidth, 2 * figwidth)
-
-)
+# figwidth = 10
 
 
-axs["left column"].plot(W1, F)
-axs["left column"].plot(W1, -W1**2)
-axs["left column"].set_title("Profit")
-axs["left column"].grid(linestyle=':')
+# fig, axs = plt.subplot_mosaic(
+
+#     [["left column", "right top"],
+#      ["left column", "right mid"],
+#      ["left column", "right down"]], figsize=(4 * figwidth, 2 * figwidth)
+
+# )
 
 
-axs["right top"].plot(W1, a)
-axs["right top"].set_title("Effort a(W)")
-axs["right top"].grid(linestyle=':')
+# axs["left column"].plot(W1, F)
+# axs["left column"].plot(W1, -W1**2)
+# axs["left column"].set_title("Profit")
+# axs["left column"].grid(linestyle=':')
 
 
-axs["right mid"].plot(W1, c)
-axs["right mid"].set_title("Consumption c(W)")
-axs["right mid"].grid(linestyle=':')
+# axs["right top"].plot(W1, a)
+# axs["right top"].set_title("Effort a(W)")
+# axs["right top"].grid(linestyle=':')
 
-B_W = r*(W1-c**(1/2)+a**2/2+2*a/5)
 
-axs["right down"].plot(W1, B_W)
-axs["right down"].set_title("Drift of W")
-axs["right down"].grid(linestyle=':')
+# axs["right mid"].plot(W1, c)
+# axs["right mid"].set_title("Consumption c(W)")
+# axs["right mid"].grid(linestyle=':')
 
-pdf_pages = PdfPages(f"./Python/Result4_{max_iter}.pdf")
-pdf_pages.savefig(fig)
-plt.close()
-pdf_pages.close()
+# B_W = r*(W1-c**(1/2)+a**2/2+2*a/5)
+
+# axs["right down"].plot(W1, B_W)
+# axs["right down"].set_title("Drift of W")
+# axs["right down"].grid(linestyle=':')
+
+# pdf_pages = PdfPages(f"./Python/Result4_{max_iter}.pdf")
+# pdf_pages.savefig(fig)
+# plt.close()
+# pdf_pages.close()
