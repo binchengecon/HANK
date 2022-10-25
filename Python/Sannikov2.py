@@ -218,7 +218,7 @@ ksp.setFromOptions()
 
 FC_Err = 1
 epoch = 0
-max_iter = 100000
+max_iter = 400
 tol = 1e-8
 # fraction = 0.1
 # epsilon = 0.01
