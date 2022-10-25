@@ -37,15 +37,15 @@ def finiteDiff_3D(data, dim, order, dlt, NBC=-2, cap=None):
             elif dim == 1:                # to second dimension
 
                 res[:, 1:-1, :] = (1 / (2 * dlt)) * \
-                    (data[:, 2:, :] - data[:, :-2, :])
-                res[:, -1, :] = (1 / dlt) * (data[:, -1, :] - data[:, -2, :])
-                res[:, 0, :] = (1 / dlt) * (data[:, 1, :] - data[:, 0, :])
+                    (data[1:-1, 2:, :] - data[1:-1, :-2, :])
+                res[:, -1, :] = (1 / dlt) * (data[1:-1, -1, :] - data[1:-1, -2, :])
+                res[:, 0, :] = (1 / dlt) * (data[1:-1, 1, :] - data[1:-1, 0, :])
             elif dim == 2:                # to third dimension
 
                 res[:, :, 1:-1] = (1 / (2 * dlt)) * \
-                    (data[:, :, 2:] - data[:, :, :-2])
-                res[:, :, -1] = (1 / dlt) * (data[:, :, -1] - data[:, :, -2])
-                res[:, :, 0] = (1 / dlt) * (data[:, :, 1] - data[:, :, 0])
+                    (data[1:-1, :, 2:] - data[1:-1, :, :-2])
+                res[:, :, -1] = (1 / dlt) * (data[1:-1, :, -1] - data[1:-1, :, -2])
+                res[:, :, 0] = (1 / dlt) * (data[1:-1, :, 1] - data[1:-1, :, 0])
             else:
                 raise ValueError('wrong dim')
 
@@ -61,21 +61,21 @@ def finiteDiff_3D(data, dim, order, dlt, NBC=-2, cap=None):
 
             elif dim == 1:                # to second dimension
 
-                res[:, 1:-1, :] = (1 / dlt ** 2) * (data[:, 2:, :] +
-                                                    data[:, :-2, :] - 2 * data[:, 1:-1, :])
-                res[:, -1, :] = (1 / dlt ** 2) * (data[:, -1, :] +
-                                                  data[:, -3, :] - 2 * data[:, -2, :])
-                res[:, 0, :] = (1 / dlt ** 2) * (data[:, 2, :] +
-                                                 data[:, 0, :] - 2 * data[:, 1, :])
+                res[:, 1:-1, :] = (1 / dlt ** 2) * (data[1:-1, 2:, :] +
+                                                    data[1:-1, :-2, :] - 2 * data[1:-1, 1:-1, :])
+                res[:, -1, :] = (1 / dlt ** 2) * (data[1:-1, -1, :] +
+                                                  data[1:-1, -3, :] - 2 * data[1:-1, -2, :])
+                res[:, 0, :] = (1 / dlt ** 2) * (data[1:-1, 2, :] +
+                                                 data[1:-1, 0, :] - 2 * data[1:-1, 1, :])
 
             elif dim == 2:                # to third dimension
 
-                res[:, :, 1:-1] = (1 / dlt ** 2) * (data[:, :, 2:] +
-                                                    data[:, :, :-2] - 2 * data[:, :, 1:-1])
-                res[:, :, -1] = (1 / dlt ** 2) * (data[:, :, -1] +
-                                                  data[:, :, -3] - 2 * data[:, :, -2])
-                res[:, :, 0] = (1 / dlt ** 2) * (data[:, :, 2] +
-                                                 data[:, :, 0] - 2 * data[:, :, 1])
+                res[:, :, 1:-1] = (1 / dlt ** 2) * (data[1:-1, :, 2:] +
+                                                    data[1:-1, :, :-2] - 2 * data[1:-1, :, 1:-1])
+                res[:, :, -1] = (1 / dlt ** 2) * (data[1:-1, :, -1] +
+                                                  data[1:-1, :, -3] - 2 * data[1:-1, :, -2])
+                res[:, :, 0] = (1 / dlt ** 2) * (data[1:-1, :, 2] +
+                                                 data[1:-1, :, 0] - 2 * data[1:-1, :, 1])
 
             else:
                 raise ValueError('wrong dim')
@@ -156,7 +156,7 @@ hW1 = 0.005
 W1 = np.arange(W1_min, W1_max+hW1, hW1)
 nW1 = len(W1)
 
-W1_short = W1[1:-2]
+W1_short = W1[1:-1]
 nW1_short = len(W1_short)
 
 W2_min = 0.0
@@ -175,7 +175,7 @@ nW3 = len(W3)
 stateSpace = np.hstack([W1_mat.reshape(-1, 1, order='F'),
                        W2_mat.reshape(-1, 1, order='F'), W3_mat.reshape(-1, 1, order='F')])
 
-W1_mat_short = W1_mat[1:-2,:,:]
+W1_mat_short = W1_mat[1:-1,:,:]
 
 W1_mat_1d = W1_mat.ravel(order='F')
 W1_mat_short_mat_1d = W1_mat_short.ravel(order='F')
@@ -192,7 +192,7 @@ upperLims_short = np.array([W1_short.max(), W2.max(), W3.max()], dtype=np.float6
 print("Grid dimension: [{}, {}, {}]\n".format(nW1, nW2, nW3))
 print("Grid step: [{}, {}, {}]\n".format(hW1, hW2, hW3))
 
-F_init = -W1_mat**2
+F_init = -W1_mat**2+0.2*W1_mat
 # F_init = -W1_mat**2
 
 # a_star = np.zeros(W1_mat.shape)
@@ -222,14 +222,14 @@ max_iter = 100000
 tol = 1e-8
 # fraction = 0.1
 # epsilon = 0.01
-fraction = 0.1
-epsilon = 0.01
+fraction = 0.0001
+epsilon = 0.0005
 
 while FC_Err > tol and epoch < max_iter:
     start_eps = time.time()
     F_init[0,:,:]=0
     F_init[-1,:,:]=-1
-    F_init_short = F_init[1:-2,:,:]
+    F_init_short = F_init[1:-1,:,:]
     dFdW1_short = finiteDiff_3D(F_init, 0, 1, hW1)
 
     dFdW1_short[-1, :, :] = -2
@@ -254,7 +254,7 @@ while FC_Err > tol and epoch < max_iter:
     #     print("warning\n")
 
     a_den = dFdW1_short+ddFddW1_short * r * sigma**2
-
+    print(a_den.shape)
     # a_den[a_den >= -1e-1] = -1e-1
 
     a_new = -1/a_den-0.4
@@ -307,12 +307,12 @@ while FC_Err > tol and epoch < max_iter:
     end_ksp = time.time()
     num_iter = ksp.getIterationNumber()
 
-    PDE_rhs = A * F_init + B_1 * dFdW1_short + B_2 * dFdW2 + B_3 * \
+    PDE_rhs = A * F_init_short + B_1 * dFdW1_short + B_2 * dFdW2 + B_3 * \
         dFdW3 + C_1 * ddFddW1_short + C_2 * ddFddW2 + C_3 * ddFddW3 + D
     PDE_Err = np.max(abs(PDE_rhs))
     FC_Err = np.max(abs((out_comp - F_init_short) / epsilon))
 
-    F_init[1:-2,:,:] = out_comp
+    F_init[1:-1,:,:] = out_comp
     F_init[0, :, :] = 0
     F_init[-1, :, :] = -1
     # F_init[-2,:,:] = F0(W1[-2])
@@ -320,6 +320,7 @@ while FC_Err > tol and epoch < max_iter:
     a_star = a
     c_star = c
     epoch += 1
+
     print("petsc total: {:.3f}s".format(end_ksp - start_ksp))
     print("PETSc preconditioned residual norm is {:g}; iterations: {}".format(
         ksp.getResidualNorm(), ksp.getIterationNumber()))
@@ -341,7 +342,7 @@ res = {
 Data_Dir = "./Python/data/"
 os.makedirs(Data_Dir, exist_ok=True)
 
-with open(Data_Dir + "model_result", "wb") as f:
+with open(Data_Dir + "model_result2", "wb") as f:
     pickle.dump(res, f)
 
 
