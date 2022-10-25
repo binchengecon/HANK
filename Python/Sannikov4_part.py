@@ -156,7 +156,7 @@ ksp.setFromOptions()
 
 FC_Err = 1
 epoch = 0
-max_iter = 100
+max_iter = 10
 tol = 1e-8
 # fraction = 0.1
 # epsilon = 0.01
@@ -278,11 +278,11 @@ res = {
     "W3": W3,
 }
 
-# Data_Dir = "./Python/data/"
-# os.makedirs(Data_Dir, exist_ok=True)
+Data_Dir = "./Python/data/"
+os.makedirs(Data_Dir, exist_ok=True)
 
-# with open(Data_Dir + "model_result4_part", "wb") as f:
-#     pickle.dump(res, f)
+with open(Data_Dir + "model_result4_part", "wb") as f:
+    pickle.dump(res, f)
 
 
 # F = F_init[:, 0, 0]
