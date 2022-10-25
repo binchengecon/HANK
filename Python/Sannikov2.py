@@ -31,7 +31,7 @@ def finiteDiff_3D(data, dim, order, dlt, NBC=-2, cap=None):
 
             if dim == 0:                  # to first dimension
 
-                res[0:-1, :, :] = (1 / (2 * dlt)) * \
+                res[0:, :, :] = (1 / (2 * dlt)) * \
                     (data[2:, :, :] - data[:-2, :, :])
 
             elif dim == 1:                # to second dimension
@@ -53,8 +53,8 @@ def finiteDiff_3D(data, dim, order, dlt, NBC=-2, cap=None):
 
             if dim == 0:                  # to first dimension
 
-                res[1:-2, :, :] = (1 / dlt ** 2) * (data[3:-2, :, :] +
-                                                    data[1:-4, :, :] - 2 * data[2:-3, :, :])
+                res[1:-1, :, :] = (1 / dlt ** 2) * (data[3:-1, :, :] +
+                                                    data[1:-3, :, :] - 2 * data[2:-2, :, :])
                 res[-1, :, :] = (1/(2*dlt))* (NBC*np.ones(res[-1, :, :].shape)-(1/(2*dlt))*(data[-2,:,:]-data[-4,:,:]))
                 res[0, :, :] = (1 / dlt ** 2) * (data[2, :, :] +
                                                  data[0, :, :] - 2 * data[1, :, :])
