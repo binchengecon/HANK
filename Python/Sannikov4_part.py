@@ -156,12 +156,12 @@ ksp.setFromOptions()
 
 FC_Err = 1
 epoch = 0
-max_iter = 10000
+max_iter = 100
 tol = 1e-8
 # fraction = 0.1
 # epsilon = 0.01
 fraction = 0.01
-epsilon = 0.005
+epsilon = 0.5
 
 while FC_Err > tol and epoch < max_iter:
     start_eps = time.time()
