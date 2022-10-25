@@ -64,7 +64,6 @@ def finiteDiff_3D(data, dim, order, dlt, DBC0=0, DBC1 = -1, NBC1 =-2, cap=None):
         res2[:, :,-1] = (1/dlt)*(res1[:,:,-1]-res1[:,:,-2])
     return res1, res2
 
-
 def h(a):
     return a**2/2.0+0.4*a
 
@@ -116,31 +115,29 @@ W3_mat_1d = W3_mat.ravel(order='F')
 lowerLims = np.array([W1.min(), W2.min(), W3.min()], dtype=np.float64)
 upperLims = np.array([W1.max(), W2.max(), W3.max()], dtype=np.float64)
 
-# lowerLims_short = np.array([W1_short.min(), W2.min(), W3.min()], dtype=np.float64)
-# upperLims_short = np.array([W1_short.max(), W2.max(), W3.max()], dtype=np.float64)
+lowerLims_short = np.array([W1_short.min(), W2.min(), W3.min()], dtype=np.float64)
+upperLims_short = np.array([W1_short.max(), W2.max(), W3.max()], dtype=np.float64)
 
 
 print("Grid dimension: [{}, {}, {}]\n".format(nW1, nW2, nW3))
 print("Grid step: [{}, {}, {}]\n".format(hW1, hW2, hW3))
 
-F_init = -W1_mat**2+0.2*W1_mat
+F_init = -W1_mat**2
 # F_init = -W1_mat**2
 
-a_star = np.zeros(W1_mat.shape)
-c_star = np.zeros(W1_mat.shape)
+# a_star = np.zeros(W1_mat.shape)
+# c_star = np.zeros(W1_mat.shape)
 
-# a_star = np.zeros(W1_mat_short.shape)
-# c_star = np.zeros(W1_mat_short.shape)
+a_star = np.zeros(W1_mat_short.shape)
+c_star = np.zeros(W1_mat_short.shape)
 
 
 dVec = np.array([hW1, hW2, hW3])
-increVec = np.array([1, nW1, nW1*nW2], dtype=np.int32)
-# increVec = np.array([1, nW1_short, nW1_short*nW2], dtype=np.int32)
+increVec = np.array([1, nW1_short, nW1_short*nW2], dtype=np.int32)
 
 petsc_mat = PETSc.Mat().create()
 petsc_mat.setType('aij')
-# petsc_mat.setSizes([nW1_short * nW2 * nW3, nW1_short * nW2 * nW3])
-petsc_mat.setSizes([nW1 * nW2 * nW3, nW1 * nW2 * nW3])
+petsc_mat.setSizes([nW1_short * nW2 * nW3, nW1_short * nW2 * nW3])
 petsc_mat.setPreallocationNNZ(13)
 petsc_mat.setUp()
 ksp = PETSc.KSP()
@@ -151,12 +148,12 @@ ksp.setFromOptions()
 
 FC_Err = 1
 epoch = 0
-max_iter = 40000
+max_iter = 50
 tol = 1e-8
 # fraction = 0.1
 # epsilon = 0.01
 fraction = 0.01
-epsilon = 0.05
+epsilon = 0.5
 
 while FC_Err > tol and epoch < max_iter:
     start_eps = time.time()
@@ -165,7 +162,8 @@ while FC_Err > tol and epoch < max_iter:
     F_init_short = F_init[1:-1,:,:]
     dFdW1,ddFddW1 = finiteDiff_3D(F_init, 0, 1, hW1)
 
-    # dFdW1_short[-1, :, :] = -2
+    dFdW1_short= dFdW1[1:-1,:,:]
+    ddFddW1_short = ddFddW1[1:-1,:,:]
     # dFdW1[0,:,:][dFdW1[0,:,:]<=1e-16]=1e-16
 
     # dW1[dW1 <= 1e-16] = 1e-16
@@ -176,9 +174,9 @@ while FC_Err > tol and epoch < max_iter:
     # dW3[dW3 <= 1e-16] = 1e-16
     # dL = dW3
     # second order
-    # ddFddW1 = finiteDiff_3D(F_init, 0, 2, hW1)
+    #  = finiteDiff_3D(F_init, 0, 2, hW1)
     # ddFddW2 = finiteDiff_3D(F_init, 1, 2, hW2)
-    # ddY = ddW2
+    # # ddY = ddW2
     # ddFddW3 = finiteDiff_3D(F_init, 2, 2, hW3)
 
     # need to change the control optimizatio completely due to corner solution of c
@@ -186,7 +184,7 @@ while FC_Err > tol and epoch < max_iter:
     # if np.any(dFdW1+ddFddW1 * r * sigma**2 >= 0):
     #     print("warning\n")
 
-    a_den = dFdW1+ddFddW1 * r * sigma**2
+    a_den = dFdW1_short+ddFddW1_short * r * sigma**2
     print(a_den.shape)
     # a_den[a_den >= -1e-1] = -1e-1
 
@@ -196,20 +194,20 @@ while FC_Err > tol and epoch < max_iter:
 
     a_new[a_new <= 1e-3] = 1e-3
 
-    c_new = (dFdW1/2)**2
-    c_new[ddFddW1 >= 0] = 0
+    c_new = (dFdW1_short/2)**2
+    c_new[ddFddW1_short >= 0] = 0
 
     # c_new[c_new<=1e-16] = 1e-16
 
     a = a_new * fraction + a_star*(1-fraction)
     c = c_new * fraction + c_star*(1-fraction)
-    A = -r*np.ones(W1_mat.shape)
-    B_1 = r*(W1_mat-u(c)+h(a))
-    B_2 = np.zeros(W1_mat.shape)
-    B_3 = np.zeros(W1_mat.shape)
+    A = -r*np.ones(W1_mat_short.shape)
+    B_1 = r*(W1_mat_short-u(c)+h(a))
+    B_2 = np.zeros(W1_mat_short.shape)
+    B_3 = np.zeros(W1_mat_short.shape)
     C_1 = r**2*sigma**2*gamma(a)**2/2
-    C_2 = np.zeros(W1_mat.shape)
-    C_3 = np.zeros(W1_mat.shape)
+    C_2 = np.zeros(W1_mat_short.shape)
+    C_3 = np.zeros(W1_mat_short.shape)
     D = r*(a-c)
 
     start_ksp = time.time()
@@ -223,9 +221,9 @@ while FC_Err > tol and epoch < max_iter:
     B_3_1d = B_3.ravel(order='F')
     D_1d = D.ravel(order='F')
     petsclinearsystem.formLinearSystem(W1_mat_1d, W2_mat_1d, W3_mat_1d, A_1d, B_1_1d, B_2_1d,
-                                       B_3_1d, C_1_1d, C_2_1d, C_3_1d, epsilon, lowerLims, upperLims, dVec, increVec, petsc_mat)
-    F_init_1d = F_init.ravel(order='F')
-    b = F_init_1d + D_1d * epsilon
+                                       B_3_1d, C_1_1d, C_2_1d, C_3_1d, epsilon, lowerLims_short, upperLims_short, dVec, increVec, petsc_mat)
+    F_init_short_1d = F_init_short.ravel(order='F')
+    b = F_init_short_1d + D_1d * epsilon
     petsc_rhs = PETSc.Vec().createWithArray(b)
     x = petsc_mat.createVecRight()
 
@@ -240,14 +238,13 @@ while FC_Err > tol and epoch < max_iter:
     end_ksp = time.time()
     num_iter = ksp.getIterationNumber()
 
-    PDE_rhs = A * F_init + B_1 * dFdW1 + B_2 * dFdW2 + B_3 * \
-        dFdW3 + C_1 * ddFddW1 + C_2 * ddFddW2 + C_3 * ddFddW3 + D
+    PDE_rhs = A * F_init_short + B_1 * dFdW1_short + C_1 * ddFddW1_short + D
     PDE_Err = np.max(abs(PDE_rhs))
-    FC_Err = np.max(abs((out_comp - F_init) / epsilon))
+    FC_Err = np.max(abs((out_comp - F_init_short) / epsilon))
 
-    F_init = out_comp
-    # F_init[0, :, :] = 0
-    # F_init[-1, :, :] = -1
+    F_init[1:-1,:,:] = out_comp
+    F_init[0, :, :] = 0
+    F_init[-1, :, :] = -1
     # F_init[-2,:,:] = F0(W1[-2])
 
     a_star = a
@@ -275,7 +272,7 @@ res = {
 Data_Dir = "./Python/data/"
 os.makedirs(Data_Dir, exist_ok=True)
 
-with open(Data_Dir + "model_result_all", "wb") as f:
+with open(Data_Dir + "model_result4_part", "wb") as f:
     pickle.dump(res, f)
 
 
