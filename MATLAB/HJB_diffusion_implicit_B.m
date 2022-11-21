@@ -15,7 +15,7 @@ the = -log(Corr);
 sig2 = 2*the*Var;
 
 
-I=10;
+I=10000;
 amin = -0.02; %borrowing constraint
 amax = 4;
 a = linspace(amin,amax,I)';
@@ -40,8 +40,10 @@ maxit= 100;
 crit = 10^(-6);
 Delta = 1000;
 
+Va  = zeros(I,J);
 Vaf = zeros(I,J);
 Vab = zeros(I,J);
+Vz  = zeros(I,J);
 Vzf = zeros(I,J);
 Vzb = zeros(I,J);
 Vzz = zeros(I,J);
@@ -53,15 +55,11 @@ yy =  min(mu,0)/dz - max(mu,0)/dz - s2/dz2;
 zeta = max(mu,0)/dz + s2/(2*dz2);
 
 %This will be the upperdiagonal of the B_switch
-% updiag=zeros(I,1); %This is necessary because of the peculiar way spdiags is defined.
-% for j=1:J
-%     updiag=[updiag;repmat(zeta(j),I,1)];
-% end
-
 updiag=zeros(I,1); %This is necessary because of the peculiar way spdiags is defined.
 for j=1:J
     updiag=[updiag;repmat(zeta(j),I,1)];
 end
+
 
 %This will be the center diagonal of the B_switch
 centdiag=repmat(chi(1)+yy(1),I,1);
@@ -95,7 +93,30 @@ for n=1:maxit
     Vab(2:I,:) = (V(2:I,:)-V(1:I-1,:))/da;
     Vab(1,:) = (z + r.*amin).^(-ga); %state constraint boundary condition
     
+%     % central difference
+%     Va(2:I-1,:) = (V(3:I,:)-V(1:I-2,:))/(2*da);
+%     
+%     Va(1,:) = (z + r.*amin).^(-ga); %state constraint boundary condition
+%     Va(I,:) = (z + r.*amax).^(-ga); %will never be used, but impose state constraint a<=amax just in case
+%     
+    % central difference version2
+    Va(2:I-1,:) = (V(3:I,:)-V(1:I-2,:))/(2*da);
+    
+    Va(1,:) = (z + r.*amin).^(-ga); %state constraint boundary condition
+    Va(I,:) = (V(I,:)-V(I-2,:))/(2*da); %will never be used, but impose state constraint a<=amax just in case
+
+%     
+%     % central difference version3
+%     Va(2:I-1,:) = (V(3:I,:)-V(1:I-2,:))/(2*da);
+%     
+%     Va(1,:) = (V(3,:)-V(1,:))/(2*da); %state constraint boundary condition
+%     Va(I,:) = (V(I,:)-V(I-2,:))/(2*da); %will never be used, but impose state constraint a<=amax just in case
+%         
     I_concave = Vab > Vaf; %indicator whether value function is concave (problems arise if this is not the case)
+    %consumption and savings with central difference
+
+    cs = Va.^(-1/ga);
+    ss = zz + r.*aa - cs;
     
     %consumption and savings with forward difference
     cf = Vaf.^(-1/ga);
@@ -109,24 +130,37 @@ for n=1:maxit
     
     % dV_upwind makes a choice of forward or backward differences based on
     % the sign of the drift    
-    If = sf > 0; %positive drift --> forward difference
-    Ib = sb < 0; %negative drift --> backward difference
-    I0 = (1-If-Ib); %at steady state
+%     If = sf > 0; %positive drift --> forward difference
+%     Ib = sb < 0; %negative drift --> backward difference
+%     I0 = (1-If-Ib); %at steady state
+%     
+    II1 = ss > 0; %positive drift --> forward difference
+    II2 = ss < 0; %positive drift --> forward difference
+    I0 = (1-II1-II2); %at steady state
+    
     %make sure backward difference is used at amax
     %Ib(I,:) = 1; If(I,:) = 0;
     %STATE CONSTRAINT at amin: USE BOUNDARY CONDITION UNLESS sf > 0:
     %already taken care of automatically
     
-    Va_Upwind = Vaf.*If + Vab.*Ib + Va0.*I0; %important to include third term
+%     Va_Upwind = Vaf.*If + Vab.*Ib + Va0.*I0; %important to include third term
 %     Va_Upwind = Vaf.*If + Vab.*Ib; %important to include third term
+    Va_Upwind = Va; 
+%     Va_Upwind = Va+ Va0.*I0; 
+
     
     c = Va_Upwind.^(-1/ga);
     u = c.^(1-ga)/(1-ga);
     
     %CONSTRUCT MATRIX A
-    X = - min(sb,0)/da;
-    Y = - max(sf,0)/da + min(sb,0)/da;
-    Z = max(sf,0)/da;
+%     X = - min(sb,0)/da;
+%     Y = - max(sf,0)/da + min(sb,0)/da;
+%     Z = max(sf,0)/da;
+    
+    X = - min(ss,0)/da;
+    Y = - max(ss,0)/da + min(ss,0)/da;
+    Z = max(ss,0)/da; 
+    
     
     updiag=0; %This is needed because of the peculiarity of spdiags.
     for j=1:J
@@ -172,13 +206,21 @@ for n=1:maxit
 end
 toc;
 
-ss = zz + r.*aa - c;
+% ss2 = zz + r.*aa - c;
+% set(gca,'FontSize',14)
+% plot(a,ss2,a,zeros(1,I),'--')
+% xlabel('a')
+% ylabel('s(a,z)')
+% xlim([0.2 amax])
+
+ss2 = zz + r.*aa - c;
 figure
 set(gca,'FontSize',14)
 plot(a,ss,a,zeros(1,I),'--')
 xlabel('a')
 ylabel('s(a,z)')
-% xlim([amin amax])
-xlim([0.2 amax])
-% saveas(gca,'Ben_all.png')
-saveas(gca,'Ben_closer.png')
+xlim([amin+0.01 amax])
+% xlim([0.2 amax])
+saveas(gca,'Bin_all.png')
+% saveas(gca,'Bin_closer.png')
+
